@@ -13,6 +13,7 @@ import { hull, WORLD } from "./model.mjs";
 import { createSimulation, type Settings, type ShipId } from "./watchkeeping.mjs";
 import { sensorPresentation, defaultOverlays, type SensorView, type OverlayToggles } from "./sensor-view.mjs";
 import { createSensorOverlays } from "./sensor-overlays";
+import { createDistantCoastline, createOceanGeometry } from "./ocean-environment";
 
 type State = ReturnType<typeof createSimulation>;
 type CameraMode = "follow" | "encounter" | "overhead";
@@ -250,8 +251,7 @@ export default function OceanScene({ simulation, snapshot, settings, onSettings,
     const contextLost = (event: Event) => { event.preventDefault(); setFailure("The 3D graphics context was lost. Reload the page to restart the ocean view."); };
     renderer.domElement.addEventListener("webglcontextlost", contextLost);
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0xaecbd6, 0.00012);
-    const camera = new THREE.PerspectiveCamera(48, 1, 0.5, 25000);
+    const camera = new THREE.PerspectiveCamera(48, 1, 0.5, 120000);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
@@ -264,18 +264,19 @@ export default function OceanScene({ simulation, snapshot, settings, onSettings,
     const sunlight = new THREE.DirectionalLight(0xffefcc, 3.2);
     sunlight.position.copy(sun).multiplyScalar(1000); scene.add(sunlight);
     const sky = new Sky();
-    sky.scale.setScalar(20000);
+    sky.scale.setScalar(100000);
     sky.material.uniforms.turbidity.value = 3;
     sky.material.uniforms.rayleigh.value = 1.5;
     sky.material.uniforms.mieCoefficient.value = 0.004;
     sky.material.uniforms.mieDirectionalG.value = 0.8;
     sky.material.uniforms.sunPosition.value.copy(sun);
     scene.add(sky);
+    scene.add(createDistantCoastline());
     const normals = normalTexture();
-    const water = new Water(new THREE.PlaneGeometry(14000, 14000, 384, 384), {
+    const water = new Water(createOceanGeometry(), {
       textureWidth: 512, textureHeight: 512, waterNormals: normals,
       sunDirection: sun, sunColor: 0xffefdc, waterColor: 0x005b70,
-      distortionScale: 3.5, fog: true,
+      distortionScale: 3.5, fog: false,
     });
     water.rotation.x = -Math.PI / 2;
     water.material.uniforms.waveAmplitude = { value: sea.current };
@@ -403,7 +404,10 @@ export default function OceanScene({ simulation, snapshot, settings, onSettings,
         });
         lastTrailTime = time;
       }
-      controls.update(); renderer.render(scene, camera);
+      controls.update();
+      // The sea stays fixed so its northern border remains beneath the mainland.
+      sky.position.copy(camera.position);
+      renderer.render(scene, camera);
       sensorOverlays.update(sensorData, time);
       renderer.autoClear = false;
       renderer.clearDepth();
