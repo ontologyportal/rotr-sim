@@ -20,7 +20,7 @@ test("each ship starts with independent observations and no instantaneous radar 
   assert.equal(state.bridge.target.track, null);
   assert.notEqual(state.bridge.own.logs, state.bridge.target.logs);
   assert.ok(state.bridge.own.logs.some(log => log.source === "CONTROL" && log.message.includes("Manual")));
-  assert.ok(state.bridge.target.logs.some(log => log.source === "CONTROL" && log.message.includes("Scenario")));
+  assert.ok(state.bridge.target.logs.some(log => log.source === "CONTROL" && log.message.includes("Manual helm")));
 });
 
 test("repeated radar observations estimate motion without applying a rules policy", () => {

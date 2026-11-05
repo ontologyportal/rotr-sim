@@ -115,7 +115,8 @@ test("vessel state records applied rudder separately from pending helm commands"
   const command = { speed: 10, rudder: 20 };
   assert.equal(before.own.rudder, 0);
   const after = advance(before, command, STEP);
-  assert.equal(after.own.rudder, 20);
+  assert.ok(after.own.rudder > 0 && after.own.rudder <= 2.5 * STEP);
+  assert.ok(after.own.rudder < command.rudder);
   assert.equal(after.target.rudder, 0);
   assert.equal(before.own.rudder, 0);
   assert.ok(after.own.speed > command.speed && after.own.speed < before.own.speed);

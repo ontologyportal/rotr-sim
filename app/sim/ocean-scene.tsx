@@ -14,6 +14,7 @@ import { createSimulation, type Settings, type ShipId } from "./watchkeeping.mjs
 import { sensorPresentation, defaultOverlays, type SensorView, type OverlayToggles } from "./sensor-view.mjs";
 import { createSensorOverlays } from "./sensor-overlays";
 import { createDistantCoastline, createOceanGeometry } from "./ocean-environment";
+import { steeringStep } from "./steering.mjs";
 
 type State = ReturnType<typeof createSimulation>;
 type CameraMode = "follow" | "encounter" | "overhead";
@@ -218,6 +219,10 @@ function makeBoat(color: number, label: string) {
 /** Own the WebGL scene independently of the simulation clock. */
 export default function OceanScene({ simulation, snapshot, settings, onSettings, onSignal }: { simulation: RefObject<State>; snapshot: State; settings: Settings; onSettings: (settings: Settings) => void; onSignal: (ship: ShipId, kind: "horn" | "vhf") => void }) {
   const container = useRef<HTMLDivElement>(null);
+  const compassRose = useRef<SVGGElement>(null);
+  const compassBearing = useRef<HTMLOutputElement>(null);
+  const compassOwn = useRef<SVGGElement>(null);
+  const compassTarget = useRef<SVGGElement>(null);
   const cameraRequest = useRef<{ mode: CameraMode; revision: number }>({ mode: "encounter", revision: 0 });
   const sea = useRef(0.65);
   const [seaState, setSeaState] = useState("0.65");
@@ -387,14 +392,11 @@ export default function OceanScene({ simulation, snapshot, settings, onSettings,
           const old = trails[i].geometry;
           trails[i].geometry = new THREE.BufferGeometry().setFromPoints(points); old.dispose();
           const projected: THREE.Vector3[] = [];
-          let x = boat.x, y = boat.y, heading = boat.heading;
+          let projectedBoat = { ...boat };
           for (let step = 0; step <= 60; step++) {
+            const { x, y } = projectedBoat;
             projected.push(new THREE.Vector3(x - WORLD.width / 2, surface(x - WORLD.width / 2, WORLD.height / 2 - y, time, amplitude) + 0.28, WORLD.height / 2 - y));
-            const dt = 1;
-            const radians = heading * Math.PI / 180;
-            x += Math.sin(radians) * boat.speed * 0.514444 * dt;
-            y += Math.cos(radians) * boat.speed * 0.514444 * dt;
-            heading = (heading + boat.rudder / 35 * boat.speed / 12 * 5 * dt + 360) % 360;
+            projectedBoat = steeringStep(projectedBoat, { speed: boat.speed, rudder: boat.rudder }, 1);
           }
           const projectedGeometry = new THREE.BufferGeometry().setFromPoints(projected);
           const oldPrediction = predictions[i].geometry;
@@ -405,6 +407,17 @@ export default function OceanScene({ simulation, snapshot, settings, onSettings,
         lastTrailTime = time;
       }
       controls.update();
+      // Orbit azimuth remains well-defined in overhead view. World north is -Z;
+      // the viewing bearing is the negative of the camera's orbital azimuth.
+      const viewBearing = ((-controls.getAzimuthalAngle() * 180 / Math.PI) % 360 + 360) % 360;
+      compassRose.current?.setAttribute("transform", `rotate(${-viewBearing} 64 64)`);
+      [compassOwn.current, compassTarget.current].forEach((needle, i) => {
+        const id = i === 0 ? "own" : "target";
+        needle?.setAttribute("transform", `rotate(${state[id].heading - viewBearing} 64 64)`);
+        needle?.setAttribute("visibility", sensorData.physicalShips.includes(id) ? "visible" : "hidden");
+      });
+      const compassText = `${(Math.round(viewBearing) % 360).toString().padStart(3, "0")}°T`;
+      if (compassBearing.current && compassBearing.current.textContent !== compassText) compassBearing.current.textContent = compassText;
       // The sea stays fixed so its northern border remains beneath the mainland.
       sky.position.copy(camera.position);
       renderer.render(scene, camera);
@@ -439,6 +452,25 @@ export default function OceanScene({ simulation, snapshot, settings, onSettings,
 
   return <div className="ocean-scene" onKeyDown={event => { if (event.key === "Escape") setPanel(null); }}>
     <div className="ocean-canvas" ref={container} />
+    <div className="scene-compass" aria-label="Camera compass and visible vessel headings" title="The compass turns with the camera. Colored arrows show each visible ship’s heading.">
+      <svg viewBox="0 0 128 128" role="img" aria-label="North and vessel headings relative to the camera">
+        <circle cx="64" cy="64" r="60" className="scene-compass-face" />
+        <g ref={compassRose}>
+          {Array.from({ length: 24 }, (_, i) => <line key={i} x1="64" y1={i % 6 === 0 ? 10 : 12} x2="64" y2={i % 6 === 0 ? 17 : 15} transform={`rotate(${i * 15} 64 64)`} className="scene-compass-tick" />)}
+          <text x="64" y="31" className="scene-compass-north">N</text>
+          <text x="102" y="68">E</text><text x="64" y="107">S</text><text x="26" y="68">W</text>
+        </g>
+        <g ref={compassTarget} className="scene-compass-target"><path d="M64 40 L70 58 L64 54 L58 58 Z" /><line x1="64" y1="56" x2="64" y2="79" /></g>
+        <g ref={compassOwn} className="scene-compass-own"><path d="M64 34 L69 49 L64 46 L59 49 Z" /><line x1="64" y1="47" x2="64" y2="83" /></g>
+        <circle cx="64" cy="64" r="3" className="scene-compass-center" />
+        <path d="M61 1 L67 1 L64 7 Z" className="scene-compass-lubber" />
+      </svg>
+      <div className="scene-compass-bearing"><span>VIEW</span><output ref={compassBearing} aria-label="Camera bearing">000°T</output></div>
+      <div className="scene-compass-ships">
+        {presentation.physicalShips.includes("own") && <span className="scene-compass-own">01 · {(Math.round(snapshot.own.heading) % 360).toString().padStart(3, "0")}°</span>}
+        {presentation.physicalShips.includes("target") && <span className="scene-compass-target">02 · {(Math.round(snapshot.target.heading) % 360).toString().padStart(3, "0")}°</span>}
+      </div>
+    </div>
     <div className="ocean-toolbar" aria-label="Simulation view controls">
       <label><span>View</span><select aria-label="Sensor view" value={sensorView} onChange={e => { const view = e.target.value as SensorView; setSensorView(view); display.current = { ...display.current, view }; changeCamera("encounter"); }}><option value="observer">Observer · both ships</option><option value="own">Ship 01 · sensors</option><option value="target">Ship 02 · sensors</option></select></label>
       <label><span>Camera</span><select aria-label="Camera view" value={mode} onChange={e => changeCamera(e.target.value as CameraMode)}><option value="encounter">Overview</option><option value="follow">Follow vessel</option><option value="overhead">Overhead</option></select></label>

@@ -91,7 +91,7 @@ input:disabled { cursor: not-allowed; opacity: .5; }
 .watch-environment label { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #b9cdd5; }
 .watch-environment select { padding: 8px; font-size: 11px; }
 .watch-environment > span { margin-left: auto; color: #7f9ba6; font-size: 10px; }
-.watch-columns { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 22px; }
+.watch-columns { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 22px; align-items: start; }
 .watch-column { min-width: 0; background: #0e232d; border: 1px solid #2a3e48; border-top: 2px solid #68e0c3; border-radius: 9px; overflow: hidden; }
 .watch-target { border-top-color: #f7be63; }
 .watch-header { display: flex; justify-content: space-between; align-items: center; padding: 22px 22px 16px; }
@@ -225,3 +225,80 @@ input:disabled { cursor: not-allowed; opacity: .5; }
  .ocean-footer { bottom: 12px; left: 12px; right: 12px; }
  .ocean-gesture-hint { display: none; }
 }
+
+/* Per-vessel bridge instruments. */
+#ship-controls { scroll-margin-top: 24px; }
+.helm-jump { display: inline-block; margin-top: 20px; color: #8ce6cf; font-size: 12px; text-underline-offset: 5px; }
+.watch-column { --helm-accent: #68e0c3; }
+.watch-target { --helm-accent: #f7be63; }
+.ship-helm { padding: 0 22px 22px; }
+.helm-instruments { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 24px; }
+.instrument-title { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin: 5px 0 12px; }
+.instrument-title h4 { font-size: 12px; font-weight: 400; color: #d9e7eb; margin: 0; }
+.instrument-title > span { font-size: 8px; color: #87a1ad; letter-spacing: 1.2px; }
+.helm-instruments svg { overflow: visible; max-width: 240px; margin-inline: auto; }
+.dial-face { fill: #091a23; stroke: #344c58; stroke-width: 1; }
+.gauge-track { fill: none; stroke: #233e4b; stroke-width: 6; stroke-linecap: round; }
+.gauge-speed { fill: none; stroke: var(--helm-accent); stroke-width: 6; stroke-linecap: round; }
+.dial-tick { stroke: #8ba4af; stroke-width: 1; }
+.dial-number { fill: #a3bac4; font: 10px Arial, sans-serif; text-anchor: middle; }
+.dial-number.cardinal { fill: #e5eeed; font-weight: bold; font-size: 13px; }
+.dial-value { fill: #e4efed; font: 25px Arial, sans-serif; text-anchor: middle; font-variant-numeric: tabular-nums; }
+.dial-caption { fill: #7295a4; font: 8px Arial, sans-serif; text-anchor: middle; letter-spacing: 1.5px; }
+.order-marker { fill: #f8cc76; stroke: #091a23; stroke-width: 1; }
+.speed-needle { stroke: var(--helm-accent); stroke-width: 2; }
+.needle-hub { fill: var(--helm-accent); stroke: #091a23; stroke-width: 2; }
+.heading-compass { width: 100%; max-width: 240px; aspect-ratio: 1; margin-inline: auto; cursor: crosshair; touch-action: none; border-radius: 50%; }
+.heading-compass:focus-visible { outline: 2px solid var(--helm-accent); outline-offset: 4px; }
+.heading-compass[aria-disabled=true] { opacity: .55; cursor: not-allowed; }
+.compass-ring { fill: none; stroke: #2b4653; stroke-width: 1; }
+.compass-ship { fill: var(--helm-accent); stroke: #dcece9; stroke-width: 1; }
+.heading-line { stroke: var(--helm-accent); stroke-width: 2; }
+.heading-order-line { stroke: #f8cc76; stroke-dasharray: 4 4; stroke-width: 1; }
+.heading-readout { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin: 6px 0 12px; }
+.heading-readout strong { font-size: 21px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.heading-readout span { color: #789aa9; font-size: 8px; letter-spacing: 1px; }
+.heading-order-input { display: flex; align-items: center; justify-content: center; gap: 7px; color: #9bb5bf; font-size: 10px; }
+.heading-order-input input { width: 64px; min-height: 32px; padding: 6px; border: 1px solid #36515d; border-radius: 5px; background: #091c26; color: #f8cc76; font-size: 13px; text-align: center; }
+.helm-order { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 10px; color: #8ba8b5; margin: 12px 0; flex-wrap: wrap; }
+.helm-order strong { font-weight: 400; color: var(--helm-accent); font-variant-numeric: tabular-nums; }
+.ship-helm input[type=range] { accent-color: var(--helm-accent); }
+.throttle-presets { display: flex; gap: 4px; margin-top: 12px; }
+.throttle-presets button { flex: 1; min-width: 0; font-size: 10px; padding: 7px 3px; }
+.heading-hold-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid #29414d; margin-top: 22px; padding-top: 14px; }
+.heading-hold-row > span { display: flex; align-items: center; gap: 7px; font-size: 11px; }
+.heading-hold-row i { width: 6px; height: 6px; border-radius: 50%; background: #637d89; }
+.heading-hold-row i.hold-on { background: var(--helm-accent); box-shadow: 0 0 8px #68e0c340; }
+.heading-hold-row button { font-size: 10px; padding: 7px 10px; }
+.helm-hint { color: #7593a1; font-size: 10px; line-height: 1.6; margin: 10px 0 17px; }
+.rudder-instrument { padding: 12px; border: 1px solid #2a4350; border-radius: 6px; background: #0b202b; }
+.rudder-instrument .helm-order { margin: 0 0 14px; font-size: 9px; }
+.rudder-instrument .helm-order strong { margin-left: 5px; }
+.rudder-scale { position: relative; height: 18px; margin: 0 8px 5px; border-bottom: 1px solid #4e6875; background: repeating-linear-gradient(to right, #4e6875 0 1px, transparent 1px calc(100% / 14)); background-size: 100% 5px; background-position: bottom; background-repeat: no-repeat; }
+.rudder-center { position: absolute; left: 50%; bottom: 0; width: 1px; height: 14px; background: #a1b6be; }
+.rudder-actual-mark { position: absolute; bottom: 0; width: 3px; height: 15px; background: var(--helm-accent); transform: translateX(-50%); }
+.rudder-order-mark { position: absolute; top: -3px; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 6px solid #f8cc76; transform: translateX(-50%); }
+.vessel-statistics > summary { cursor: pointer; color: #adc4ce; padding: 14px 0; font-size: 11px; }
+.vessel-statistics { border-top: 1px solid #223d48; padding-bottom: 0; }
+.vessel-statistics[open] { padding-bottom: 20px; }
+.ship-log > summary { cursor: pointer; padding: 17px 22px; font-size: 11px; color: #b9cdd6; background: #10242e; }
+.ship-log > summary > span { float: right; font: 10px Consolas, monospace; color: #7596a4; }
+@media (max-width: 1050px) { .helm-instruments { gap: 14px; } .ship-helm { padding-inline: 16px; } }
+@media (max-width: 380px) { .helm-instruments { gap: 10px; } .ship-helm { padding-inline: 12px; } .heading-readout strong { font-size: 17px; } .heading-readout { gap: 4px; } }
+
+/* Camera-relative north rose; pointer events pass through to the ocean. */
+.scene-compass { position: absolute; z-index: 2; top: 82px; right: 16px; width: 126px; padding: 7px 6px 9px; border: 1px solid #ffffff24; border-radius: 10px; background: #0a202ddd; backdrop-filter: blur(12px); color: #d6e6eb; pointer-events: none; user-select: none; }
+.scene-compass-face { fill: #09212cc4; stroke: #7596a65c; stroke-width: 1; }
+.scene-compass-tick { stroke: #9db7c2; stroke-width: 1; }
+.scene-compass text { fill: #c0d2d9; font: 11px Arial, sans-serif; text-anchor: middle; }
+.scene-compass text.scene-compass-north { fill: #fff; font-size: 13px; font-weight: bold; }
+.scene-compass-own { color: #68e0c3; fill: #68e0c3; stroke: #68e0c3; }
+.scene-compass-target { color: #f7be63; fill: #f7be63; stroke: #f7be63; }
+.scene-compass line { stroke-width: 1.5; }
+.scene-compass-center { fill: #dfedef; }
+.scene-compass-lubber { fill: #dfedef; }
+.scene-compass-bearing { display: flex; justify-content: center; align-items: baseline; gap: 7px; padding-top: 3px; }
+.scene-compass-bearing > span { font-size: 8px; letter-spacing: 1px; color: #95aebc; }
+.scene-compass-bearing output { font: 13px Consolas, monospace; font-variant-numeric: tabular-nums; }
+.scene-compass-ships { display: flex; justify-content: center; gap: 8px; margin-top: 7px; font: 8px Consolas, monospace; }
+@media (max-width: 700px) { .scene-compass { top: 150px; right: 10px; width: 108px; padding: 5px 4px 7px; } .scene-compass-ships { gap: 5px; font-size: 8px; } }

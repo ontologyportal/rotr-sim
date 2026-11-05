@@ -1,4 +1,5 @@
 import { Ship } from "../../vendor/vessel.mjs";
+import { steeringStep } from "./steering.mjs";
 
 export const KNOT = 1852 / 3600;
 export const STEP = 1 / 30;
@@ -35,8 +36,8 @@ export function initialState() {
   return {
     time: 0,
     collision: /** @type {{ time: number } | null} */ (null),
-    own: { x: 1150, y: 1150, heading: 0, speed: 20, rudder: 0, trail: [[1150, 1150]] },
-    target: { x: 2850, y: 2850, heading: 270, speed: 20, rudder: 0, trail: [[2850, 2850]] },
+    own: { x: 1150, y: 1150, heading: 0, speed: 20, rudder: 0, yawRate: 0, trail: [[1150, 1150]] },
+    target: { x: 2850, y: 2850, heading: 270, speed: 20, rudder: 0, yawRate: 0, trail: [[2850, 2850]] },
   };
 }
 
@@ -63,18 +64,18 @@ export function hullsOverlap(a, b) {
 export function advance(state, command, dt) {
   if (state.collision) return state;
   if (hullsOverlap(state.own, state.target)) return { ...state, collision: { time: state.time } };
-  const move = (boat, own) => {
-    const speed = own ? boat.speed + (command.speed - boat.speed) * (1 - Math.exp(-dt / 4)) : boat.speed;
-    const rudder = own ? command.rudder : 0;
-    const heading = (boat.heading + rudder / 35 * speed / 12 * 5 * dt + 360) % 360;
-    const angle = heading * Math.PI / 180;
-    const x = boat.x + Math.sin(angle) * speed * KNOT * dt;
-    const y = boat.y + Math.cos(angle) * speed * KNOT * dt;
+  const move = (boat, order) => {
+    const next = steeringStep(boat, order, dt);
+    const { x, y } = next;
     const last = boat.trail[boat.trail.length - 1];
     const trail = Math.hypot(x - last[0], y - last[1]) >= 3 ? [...boat.trail.slice(-299), [x, y]] : boat.trail;
-    return { x, y, heading, speed, rudder, trail };
+    return { ...next, trail };
   };
-  const next = { time: state.time + dt, collision: state.collision, own: move(state.own, true), target: move(state.target, false) };
+  // Retain the original single-ship command shape for existing callers.
+  const next = { time: state.time + dt, collision: state.collision,
+    own: move(state.own, command.own ?? command),
+    target: move(state.target, command.target ?? { speed: state.target.speed, rudder: 0 }),
+  };
   if (hullsOverlap(next.own, next.target)) next.collision = { time: next.time };
   return next;
 }

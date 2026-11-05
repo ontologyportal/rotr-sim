@@ -10,10 +10,14 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. Click **Run simulation**, set the target speed,
-and move the rudder: negative is port, positive is starboard. **Center rudder**
-stops the turn; **Reset** restores the crossing encounter. Time can run at
-1x, 5x, or 10x. Pause freezes both the navigation state and wave clock.
+Open http://localhost:3000. Each ship has an independent throttle, heading
+compass, and manual rudder below the ocean view. Click **Run** to advance time.
+Drag the compass ring or enter a true heading to engage heading hold; the
+controller moves the rudder to follow the order. Arrow keys on the compass
+adjust 1 degree (Shift: 10 degrees). Manual rudder input disengages heading hold.
+**Amidships / manual** centers the rudder; the ship takes time to stop turning.
+**Reset** restores both ships and clears heading orders. Time can run at 1x,
+5x, 10x, or 20x. Pause freezes navigation and the wave clock.
 
 ## 3D view
 
@@ -99,18 +103,26 @@ controls remain in each vessel's section below the scene.
   with OrbitControls, the Sky atmosphere, and the reflective Water shader.
   A two-component regular swell displaces the ocean surface. Sampling that same
   surface at the hull centre, bow/stern, and sides drives heave, pitch, and roll.
-- Speed approaches its target over a four-second time constant. Rudder sets
-  a speed-dependent turn rate. Steering and wave-following are illustrative,
-  not calibrated hydrodynamics or Vessel.js WaveMotion response calculations.
-  Hull contact pauses the simulation; impacts do not apply bounce or damage.
-- The amber vessel holds 270 degrees at 6 knots. The initial courses intersect.
+- `app/sim/steering.mjs` supplies both ships' motion and the observer prediction
+  vectors. Throttle orders use 35-second acceleration and 55-second deceleration
+  time constants. Rudder deflection is limited to +/-35 degrees and travel to
+  2.5 degrees/second (65 degrees in 26 seconds). Yaw follows a first-order Nomoto
+  response with a 20-second time constant at 20 kt and a steady hard-over radius
+  of 2.8 hull lengths; steering authority falls with forward speed.
+  Heading hold uses the shortest angular error plus yaw-rate feedback to apply
+  counter-rudder before reaching the ordered heading. It never sets heading
+  directly. These are illustrative training parameters, not calibrated vessel
+  coefficients or Vessel.js WaveMotion calculations. Hull contact pauses the
+  simulation; impacts do not apply bounce or damage.
+- Both vessels start at 20 kt, with the amber vessel heading 270 degrees.
+  Its throttle and helm can be controlled independently. The initial courses intersect.
   Boats continue outside the starting scenario area; the camera follows them.
 - `vendor/` contains the standalone Vessel.js 0.0.14 module and MIT license;
   see `vendor/README.md` for provenance.
 
 ## Collisions
 
-Hull contact uses the separating axis theorem on both oriented 20 x 6 m hull
+Hull contact uses the separating axis theorem on both oriented 155 x 20 m hull
 footprints, including edge contact. The model checks each 1/30-second step;
 wave heave, pitch, roll, railings, and fenders are excluded from this horizontal
 footprint. This is discrete contact detection for the current speed range.
@@ -121,8 +133,8 @@ an alert offers **Restart encounter**. Playback and helm controls remain
 locked until reset. Speeds shown at impact are the frozen pre-impact speeds;
 there is no rigid-body impulse or damage model.
 
-To reproduce, reset, leave 6 kn / amidships, and run at 10x. Contact occurs at
-about 93 simulation seconds (roughly 9.3 real seconds at full frame rate).
+To reproduce, reset, leave both ships at 20 kt / amidships, and run at 10x.
+Contact occurs at about 157 simulation seconds (roughly 15.7 real seconds).
 Turn early to avoid the encounter. Closest-approach prediction remains a
 separate warning; only actual hull contact triggers the stop.
 
@@ -131,8 +143,12 @@ separate warning; only actual hull contact triggers the stop.
 Below the ocean are independent watchkeeping columns for each vessel.
 Each includes live simulation-state statistics: current and target speed,
 heading, applied and commanded rudder, controller mode, and east/north position.
-Applied rudder updates on the next physics step; commands can be edited while
-paused. The target uses a fixed-speed scenario controller with zero rudder.
+The gauges distinguish actual speed and heading from ordered speed and heading.
+The gold bug is the order; the ship pointer shows actual heading. Rudder travel,
+yaw inertia, and throttle lag remain active in manual and heading-hold modes.
+Commands can be edited while paused and take effect when time resumes.
+Vessel statistics and each ship's watchkeeping log are expandable, closed by
+default. Expanding one ship's log does not open the other ship's log.
 
 Sensor observations are shown separately:
 
@@ -209,3 +225,14 @@ References: [USNA navigation electronics guidance](https://www.usna.edu/Sailing/
 (ranges in nautical miles, yards inside 200 yards), and
 [U.S. Navy vessel specifications](https://www.cpf.navy.mil/newsroom/news/article/2637476/newly-commissioned-uss-tripoli-departs-shipyard-for-san-diego/)
 (feet, long tons, knots).
+
+## Steering model references
+
+The first-order yaw-response structure follows the Nomoto model described in
+[Ejaz and Chen, 2017](https://journals.sagepub.com/doi/full/10.1177/1729881417703568).
+The chosen 2.5 degree/second actuator rate is consistent with the 65-degree /
+28-second steering-gear travel benchmark in
+[IMO resolution A.1120(30), section 5.1.3.36](https://wwwcdn.imo.org/localresources/en/KnowledgeCentre/IndexofIMOResolutions/AssemblyDocuments/A.1120%2830%29.pdf).
+This benchmark informs actuator travel only; it does not calibrate this hull's
+turning performance. The gauges and fjord scenery are visually inspired by the
+[Vessel.js Trondheim example](https://shiplab.github.io/vesseljs/examples/trondheim.html).

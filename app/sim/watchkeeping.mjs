@@ -150,7 +150,10 @@ export function observe(state, old, settings, command) {
       }
     }
     watch.receivedSignals = watch.receivedSignals.slice(-20);
-    const control = id === "own" ? `Manual helm target: ${command.speed.toFixed(1)} kt, rudder ${command.rudder}°.` : "Scenario controller holds 270.0°T at 20 kt.";
+    const helm = command[id] ?? (id === "own" ? command : { speed: own.speed, rudder: 0 });
+    const control = typeof helm.heading === "number"
+      ? `Heading hold: ${bearingText(helm.heading)}; speed order ${helm.speed.toFixed(1)} kt.`
+      : `Manual helm target: ${helm.speed.toFixed(1)} kt, rudder ${helm.rudder}°.`;
     if (control !== watch.control) { log(watch, time, "CONTROL", control, "control"); watch.control = control; }
     if (state.collision && !watch.collisionLogged) {
       log(watch, time, "EVALUATOR", "Ground-truth hull contact detected. Simulation clock and controls paused; reset required.", "system");
