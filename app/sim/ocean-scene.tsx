@@ -422,6 +422,7 @@ export default function OceanScene({ simulation, snapshot, settings, onSettings,
       renderer.domElement.removeEventListener("webglcontextlost", contextLost);
       const materials = new Set<THREE.Material>();
       scene.traverse(object => {
+        if (object instanceof THREE.InstancedMesh) object.dispose();
         if (object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Sprite) {
           if ("geometry" in object) object.geometry.dispose();
           const list = Array.isArray(object.material) ? object.material : [object.material];
